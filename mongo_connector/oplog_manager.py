@@ -319,6 +319,10 @@ class OplogThread(threading.Thread):
                 LOG.exception(
                     "Cursor closed due to an exception. "
                     "Will attempt to reconnect.")
+            except Exception:
+                LOG.exception(
+                    "Process oplog document failed. "
+                    "Will attempt to reconnect and retry from last checkpoint.")
 
             # update timestamp before attempting to reconnect to MongoDB,
             # after being join()'ed, or if the cursor closes
@@ -786,6 +790,8 @@ class OplogThread(threading.Thread):
     def update_checkpoint(self, checkpoint):
         """Store the current checkpoint in the oplog progress dictionary.
         """
+        for docman in self.doc_managers:
+            docman.commit()
         if checkpoint is not None and checkpoint != self.checkpoint:
             self.checkpoint = checkpoint
             with self.oplog_progress as oplog_prog:
